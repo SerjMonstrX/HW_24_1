@@ -86,7 +86,7 @@ class LessonUpdateAPIView(UpdateAPIView):
         user = self.request.user
         lesson_id = self.kwargs['pk']
         lesson = Lesson.objects.get(pk=lesson_id)
-        if lesson.owner == user or user.groups.filter(name='Moderators').exists():
+        if lesson.owner == user or user.groups.filter(name='ssss').exists():
             serializer.save()
         else:
             # Если пользователь не владелец урока и не модератор, не допускать редактирование
