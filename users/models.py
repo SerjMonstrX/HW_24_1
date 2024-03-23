@@ -1,12 +1,39 @@
-from django.contrib.auth.models import AbstractUser
 from django.db import models
-from materials.models import Course, Lesson, NULLABLE
+from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import BaseUserManager
 
 
+NULLABLE = {'blank': True, 'null': True}
 PAYMENT_METHOD_CHOICES = (
     ('cash', 'Наличные'),
     ('card', 'Карта'),
 )
+
+
+class UserManager(BaseUserManager):
+    def create_user(self, email, password=None, **extra_fields):
+        from materials.models import Course, Lesson  # Импорт здесь
+
+        if not email:
+            raise ValueError('Email address is required')
+
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+
+        return self.create_user(email, password, **extra_fields)
 
 
 class User(AbstractUser):
@@ -15,6 +42,7 @@ class User(AbstractUser):
     avatar = models.ImageField(upload_to='avatars', verbose_name='аватар', **NULLABLE)
     phone_number = models.CharField(max_length=50, verbose_name='телефон', **NULLABLE)
     city = models.CharField(max_length=100, verbose_name='город', **NULLABLE)
+    objects = UserManager()
 
     class Meta:
         verbose_name = 'пользователь'
@@ -25,6 +53,7 @@ class User(AbstractUser):
 
 
 class Payment(models.Model):
+    from materials.models import Course, Lesson  # Импорт здесь
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='пользователь')
     payment_date = models.DateField(verbose_name='дата оплаты')
     course = models.ForeignKey(Course, on_delete=models.CASCADE, verbose_name='оплаченный курс', **NULLABLE)
