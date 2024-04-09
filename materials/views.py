@@ -16,16 +16,18 @@ class CourseViewSet(ModelViewSet):
     serializer_class = CourseSerializer
     permission_classes = [IsAuthenticated | IsModeratorReadOnly]
     pagination_class = CustomPagination
-    queryset = Course.objects.all()
 
     def get_queryset(self):
         user = self.request.user
+        queryset = Course.objects.all()
         if user.is_authenticated:
-            if user.groups.filter(name='Moderators').exists():
-                return Course.objects.all()
+            if user.groups.filter(name='Moderators').exists() or user.is_staff:
+                queryset = queryset.order_by('name')  # Сортировка по имени курса
             else:
-                return Course.objects.filter(owner=user)
-        return Course.objects.none()
+                queryset = queryset.filter(owner=user).order_by('name')  # Сортировка по имени курса
+        else:
+            queryset = Course.objects.none()
+        return queryset
 
 
 class LessonCreateAPIView(CreateAPIView):
@@ -87,13 +89,14 @@ class SubscriptionAPIView(APIView):
         course_id = self.request.data.get('course_id')
         course_item = get_object_or_404(Course, id=course_id)
 
-        subs_item = Subscription.objects.filter(user=user, course=course_item)
-        if subs_item.exists():
-            Subscription.objects.filter(user=user, course=course_item).delete()
-            message = 'подписка удалена'
-        else:
-            Subscription.objects.create(user=user, course=course_item)
+        subs_item, created = Subscription.objects.get_or_create(user=user, course=course_item)
+
+        if created:
             message = 'подписка добавлена'
+        else:
+            subs_item.delete()
+            message = 'подписка удалена'
+
         return Response({"message": message})
 
     def get(self, request, *args, **kwargs):
