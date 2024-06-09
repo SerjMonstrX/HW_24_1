@@ -67,7 +67,7 @@ class LessonUpdateAPIView(UpdateAPIView):
 
     def perform_update(self, serializer):
         user = self.request.user
-        lesson_id = self.kwargs['pk']
+        lesson_id = self.kwargs['pk']   
         lesson = Lesson.objects.get(pk=lesson_id)
         if lesson.owner == user or user.groups.filter(name='Moderators').exists():
             serializer.save()

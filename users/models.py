@@ -60,6 +60,8 @@ class Payment(models.Model):
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, verbose_name='отдельно оплаченный урок', **NULLABLE)
     amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='сумма оплаты')
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, verbose_name='способ оплаты')
+    session_id = models.CharField(max_length=255, verbose_name="ID сессии", **NULLABLE)
+    link = models.URLField(max_length=400, verbose_name='ссылка на оплату', **NULLABLE)
 
     def __str__(self):
         return f'{self.user} - оплачено {self.course}, {self.lesson}.'
