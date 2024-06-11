@@ -12,8 +12,6 @@ PAYMENT_METHOD_CHOICES = (
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
-        from materials.models import Course, Lesson  # Импорт здесь
-
         if not email:
             raise ValueError('Email address is required')
 
@@ -54,8 +52,8 @@ class User(AbstractUser):
 
 class Payment(models.Model):
     from materials.models import Course, Lesson  # Импорт здесь
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='пользователь')
-    payment_date = models.DateField(verbose_name='дата оплаты')
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, verbose_name='пользователь', **NULLABLE)
+    payment_date = models.DateField(auto_now_add=True, verbose_name='дата оплаты')
     course = models.ForeignKey(Course, on_delete=models.CASCADE, verbose_name='оплаченный курс', **NULLABLE)
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, verbose_name='отдельно оплаченный урок', **NULLABLE)
     amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='сумма оплаты')
