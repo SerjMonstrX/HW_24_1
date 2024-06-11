@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'users',
     'materials',
     'django_filters',
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [
@@ -138,3 +139,5 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     )
 }
+
+STRIPE_API_KEY = os.getenv('STRIPE_API_KEY')
