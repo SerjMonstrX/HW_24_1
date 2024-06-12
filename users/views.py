@@ -57,41 +57,38 @@ class PaymentCreateAPIView(CreateAPIView):
 
     def perform_create(self, serializer):
         user = self.request.user
-        if not user.is_authenticated:
-            raise ValueError("Пользователь должен быть аутентифицирован")
 
-        try:
-            with transaction.atomic():
-                payment = serializer.save(user=user)
+        # Проверка наличия курса или урока
+        course = serializer.validated_data.get('course')
+        lesson = serializer.validated_data.get('lesson')
+        if not course and not lesson:
+            raise ValueError("Должен быть указан либо курс, либо урок")
 
-                if payment.course is None and payment.lesson is None:
-                    raise ValueError("Должен быть указан либо курс, либо урок")
+        with transaction.atomic():
+            # Создание платежа
+            payment = serializer.save(user=user)
+            try:
+                if course:
+                    name = f"Оплата курса {course.name}"
+                    description = course.description
+                else:
+                    name = f"Оплата урока {lesson.name}"
+                    description = lesson.description
 
-                course_name = payment.course.name if payment.course else payment.lesson
-                course_description = payment.course.description if payment.course else payment.lesson.description
-
-                product = create_stripe_product(
-                    name=f"Оплата {course_name}",
-                    description=course_description
-                )
-
+                product = create_stripe_product(name=name, description=description)
                 price = create_stripe_price(product['id'], payment.amount)
-
                 success_url = self.request.build_absolute_uri('/payment/success/')
                 cancel_url = self.request.build_absolute_uri('/payment/cancel/')
                 session_id, payment_link = create_stripe_session(price['id'], success_url, cancel_url)
-
                 payment.session_id = session_id
                 payment.link = payment_link
                 payment.save()
-        except stripe.error.StripeError as e:
-            if payment.pk:
+            except stripe.error.StripeError as e:
                 payment.delete()
-            raise e
-        except Exception as e:
-            if payment.pk:
+                raise e
+            except Exception as e:
                 payment.delete()
-            raise e
+                raise e
 
 
 class PaymentStatusAPIView(APIView):
