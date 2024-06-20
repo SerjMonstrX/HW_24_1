@@ -11,6 +11,7 @@ class Course(models.Model):
     name = models.CharField(max_length=100, verbose_name='название курса')
     preview = models.ImageField(upload_to='previews/courses/', verbose_name='логотип', **NULLABLE)
     description = models.TextField(verbose_name='описание', **NULLABLE)
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='время обновления')
 
     def __str__(self):
         return self.name

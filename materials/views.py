@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -10,6 +12,7 @@ from materials.paginators import CustomPagination
 from materials.serializers import CourseSerializer, LessonSerializer, SubscriptionStatusSerializer
 from users.permissions import IsModerator, IsModeratorReadOnly, IsOwner
 from django.shortcuts import get_object_or_404
+from .tasks import send_course_update_email
 
 
 class CourseViewSet(ModelViewSet):
@@ -28,6 +31,15 @@ class CourseViewSet(ModelViewSet):
         else:
             queryset = Course.objects.none()
         return queryset
+
+    def perform_update(self, serializer):
+        course = serializer.instance  # Получаем текущий объект до сохранения
+        last_updated = course.updated_at
+        course = serializer.save()  # Сохраняем изменения
+
+        # Проверяем, прошло ли больше 4 часов с последнего обновления
+        if last_updated < course.updated_at - timedelta(hours=4):
+            send_course_update_email.delay(course.id)
 
 
 class LessonCreateAPIView(CreateAPIView):
