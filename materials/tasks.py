@@ -1,8 +1,8 @@
 # tasks.py
-from datetime import timezone, timedelta
+from datetime import timedelta, datetime
 
-from celery import shared_task, Celery
-from celery.schedules import crontab
+import pytz
+from celery import shared_task
 from django.core.mail import send_mail
 
 from config.settings import EMAIL_HOST_USER
@@ -11,6 +11,8 @@ from .models import User, Course, Subscription
 
 @shared_task
 def send_course_update_email(course_id):
+    """Задача для отправки e-mail подписчикам курса"""
+
     course = Course.objects.get(id=course_id)
     subscribers = User.objects.filter(subscription__course=course)
     for user in subscribers:
@@ -25,18 +27,9 @@ def send_course_update_email(course_id):
 
 @shared_task
 def deactivate_inactive_users():
-    one_month_ago = timezone.now() - timedelta(days=30)
-    inactive_users = User.objects.filter(last_login__lt=one_month_ago, is_active=True)
+    """Задача для блокировки пользователей по полю last_login"""
+
+    timezone = pytz.UTC
+    one_month_ago = datetime.now(timezone) - timedelta(days=30)
+    inactive_users = User.objects.filter(last_login__lt=one_month_ago, is_active=True, is_staff=False)
     inactive_users.update(is_active=False)
-
-
-app = Celery('config')
-
-app.conf.beat_schedule = {
-    'deactivate-inactive-users-every-day': {
-        'task': 'users.tasks.deactivate_inactive_users',
-        'schedule': crontab(hour=0, minute=0),
-    },
-}
-
-app.conf.timezone = 'UTC'
