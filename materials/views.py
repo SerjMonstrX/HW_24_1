@@ -14,6 +14,7 @@ from users.permissions import IsModerator, IsModeratorReadOnly, IsOwner
 from django.shortcuts import get_object_or_404
 from .tasks import send_course_update_email
 
+
 class CourseViewSet(ModelViewSet):
     serializer_class = CourseSerializer
     permission_classes = [IsAuthenticated | IsModeratorReadOnly]
